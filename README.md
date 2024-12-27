@@ -29,7 +29,7 @@ After activating the conda environment, you can edit each script to suit your sp
 Note: This usage section will be updated in future versions with more specific instructions.
 
 ## Script Descriptions
-1.	01.disjoin_protein_coding_genes.R
+	1.	01.disjoin_protein_coding_genes.R
 
 This script assigns overlapping bases between genes (operons). Overlapping bases are assigned based on the length of the overlapping elements. After the initial assignment, the ranges are updated in case multiple overlaps occur within a single range.
 
