@@ -1,36 +1,61 @@
+setwd("~/MacStorage/CeMbio/ceMbio/tst")
 # This script aims to produce a non-overlapping annotation in prokaryotic genomes 
 # This script is based in Chow et al., 2019 segmented annotation form Cei
 # however it was adapted for bacterial genomes with less TEs. 
 # Also here I consider the gene structure in bacterial genomes
-pacman::p_load(rtracklayer, Rsamtools, GenomicRanges)
+pacman::p_load(rtracklayer, Rsamtools, GenomicRanges, optparse)
+
+# Command line options
+option_list = list(
+  make_option(c("-f", "--fasta"), type = "character", default = NULL,
+              help = "Genome fasta file"),
+  make_option(c("-p", "--gene_gff"), type = "character", default = NULL,
+              help = "Disjoined gene annotation"),
+  make_option(c("-r", "--repeats_gff"), type = "character", default = NULL,
+              help = "Disjoined annotation of repeats"),
+  make_option(c("-n", "--ncrna_gff"), type = "character", default = NULL,
+              help = "Disjoined annotation of ncRNAs"),
+  make_option(c("-o", "--out_gff"), type = "character", default = NULL,
+              help = "Outfile name of the segmented annotation")
+  
+)
+
+# Parse command line arguments
+opt = parse_args(OptionParser(option_list = option_list))
+# Check if input file is provided
+# Validate input arguments
+if (is.null(opt$fasta)) {
+  stop("Error: No fasta file provided. Use --fasta to specify the input file.")
+}
+if (is.null(opt$gene_gff)) {
+  stop("Error: No gene annotation provided. Use --gene_gff to specify the input file.")
+}
+
+if (is.null(opt$repeats_gff)) {
+  stop("Error: No repeat annotation provided. Use --repeats_gff to specify the input file.")
+}
+
+if (is.null(opt$ncrna_gff)) {
+  stop("Error: No ncRNA annotation provided. Use --ncrna_gff to specify the input file.")
+}
+
+if (is.null(opt$out_gff)) {
+  stop("Error: No out file name provided. Use --out_gff to specify the output file.")
+}
 
 # Read files
-genome = "~/storage/Data/cEle_wagos_eco/raw/genome/escherichia_coli.PRJNA526029.genomic.fa" # assembly
-proteinsFile = "escherichia_coli.PRJNA526029.disjon_annotation.gff3" # from 01
-repeatsFile = "escherichia_coli.PRJNA526029.disjoin_repeats.gff3" # from 03
-ncRNAFile = "escherichia_coli.PRJNA526029.disjoin_ncRNA.gff3" # from 02
-
-if (isEmpty(proteinsFile) == T) {
-  print("No protein annotation was provided")
-  stop()
-}
-
-if (isEmpty(repeatsFile) == T) {
-  print("No repeat annotation was provided")
-  stop()
-}
-
-if (isEmpty(ncRNAFile) == T) {
-  print("No ncRNA annotation was provided")
-  stop()
-}
+genome = opt$fasta # assembly
+proteinsFile = opt$gene_gff # from 01
+repeatsFile = opt$repeats_gff # from 03
+ncRNAFile = opt$ncrna_gff # from 02
+outFile = opt$out_gff # outfile
 
 # import files
 proteins = import(proteinsFile)
 repreats = import(repeatsFile)
 ncrna = import(ncRNAFile)
-# define output
-outFile = sub("disjon_annotation.gff3", "segmented_annotation.gff3", proteinsFile)
+
+
 
 # I need a list with all elements
 allList = list(proteins, repreats, ncrna)
@@ -108,12 +133,11 @@ names(strandedList) = NULL
 allSegemets = do.call(c, strandedList)
 allSegemetsByCalss = split(allSegemets, allSegemets$class)
 
+
+ncFams =  names(allSegemetsByCalss)[!grepl("CDS|repeat",names(allSegemetsByCalss))]
 # I'm going to define a hierarchical classification to solve overlaps
-strandedCategories = c("rRNA_S", "rRNA_As", "tRNA_S", "tRNA_As",
-                       "ncRNA_S", "ncRNA_As", "riboswitch_S", "riboswitch_As",
-                       "SRP_RNA_S", "SRP_RNA_As", "antisense_RNA_S", 
-                       "antisense_RNA_As", "sequence_feature_S", "sequence_feature_As",
-                       "repeat_S", "repeat_As","CDS_S", "CDS_As")
+strandedCategories = c(ncFams, "repeat_S", "repeat_As","CDS_S", "CDS_As")
+
 stopifnot(names(allSegemetsByCalss) %in% strandedCategories)
 
 strandedList = allSegemetsByCalss[strandedCategories]

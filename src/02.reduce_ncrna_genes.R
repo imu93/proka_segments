@@ -1,9 +1,35 @@
 # This script aims to resolve overlaps in ncRNA annotations in a reduce manner if present
-pacman::p_load(rtracklayer, Rsamtools, dplyr)
+pacman::p_load(rtracklayer, Rsamtools, dplyr,optparse)
 
-faFile = "~/storage/Data/cEle_wagos_eco/raw/genome/escherichia_coli.PRJNA526029.genomic.fa"
-gffFile = "escherichia_coli.PRJNA526029.genomic.gff"
-outFile = sub("genomic.gff", "disjoin_ncRNA.gff3", gffFile)
+# Command line options
+option_list = list(
+  make_option(c("-f", "--fasta"), type = "character", default = NULL,
+              help = "Genome fasta file"),
+  make_option(c("-g", "--gff"), type = "character", default = NULL,
+              help = "Full genome annotation (typically from prokka)"),
+  make_option(c("-o", "--out_gff"), type = "character", default = NULL,
+              help = "Out gff file name")
+)
+
+# Parse command line arguments
+opt = parse_args(OptionParser(option_list = option_list))
+# Check if input file is provided
+# Validate input arguments
+if (is.null(opt$fasta)) {
+  stop("Error: No fasta file provided. Use --fasta to specify the input file.")
+}
+if (is.null(opt$gff)) {
+  stop("Error: No annotation provided. Use --gff to specify the input file.")
+}
+if (is.null(opt$out_gff)) {
+  stop("Error: No out file name provided. Use --out_gff to specify the output file.")
+}
+
+# Pass input variables
+faFile = opt$fasta
+gffFile = opt$gff
+outFile = opt$out_gff
+
 # import and format
 gff = import(gffFile)
 sInfo = seqinfo(scanFaIndex(faFile))
